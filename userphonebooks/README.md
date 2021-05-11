@@ -31,6 +31,8 @@ Users:
 
 GET /users - to get all users
 
+GET /users?name={name} - to get user by name or partname
+
 response body format: 
 
                                     [
@@ -49,8 +51,6 @@ response body format:
                                     ]
 
 GET /users/{id} - to get user with id {id}
-
-GET /users?name={name} - to get user by name or partname
 
 DELETE /user/{id} - to delete user with id {id}
 
@@ -81,15 +81,29 @@ request body format:
 
                              5 <= name length <= 15 
 
-
+response body format:
+                
+                            {   
+                                "id" : {id}
+                                "name" : "{name}"
+                                "records : [
+                                    {
+                                        "id" : id,
+                                        "userId" : userId
+                                        "phone_owner" : "phone_owner",
+                                        "phone_number" : "phone_number"
+                                    }
+                                ]
+                            }
+                            
 
 Records:
 
 GET /users/{id}/records - to get all records for user with id {id}
 
-GET /users/{id}/records/{recordId} - to get record with id {recordId} for user with id {id}
+GET /users/{id}/records?phone={phone} - to get records whith phone_number full matched {phone} for user whith id {id},
+                                        {phone} - sequence of digits, length = 11
 
-DELETE /users/{id}/records/{recordId} - to delete record with id {recordId} for user with id {id} 
 
 response body format: 
             
@@ -102,22 +116,41 @@ response body format:
                             }
 
                         ]
-            
-GET /users/{id}/records?phone={phone} - to get records whith phone_number full matched {phone} for user whith id {id},
-                                        {phone} - sequence of digits, length = 11
+           
+GET /users/{id}/records/{recordId} - to get record with id {recordId} for user with id {id}
+
+DELETE /users/{id}/records/{recordId} - to delete record with id {recordId} for user with id {id}
+
+response body format: 
+           
+                            {
+                                "id" : {recordId},
+                                "userId" : {id}
+                                "phone_owner" : "phone_owner",
+                                "phone_number" : "phone_number"
+                            }
+
 
 PUT /users/{id}/records/{recordId} - to edit record with id {recordId} for user with id {id}
 
 POST /users/{id}/records - to add new record for user with id {id}
 
-
 request body format: 
                     
                         {
-                        "phone_owner" : "phone_owner",
-                        "phone_number" : "phone_number"
+                            "phone_owner" : "phone_owner",
+                            "phone_number" : "phone_number"
                         }, 
 
                         5 <= phone_owner length <= 15
                         phone_number - sequence of digits, length = 11
+                        
+response body format: 
+           
+                            {
+                                "id" : {recordId},
+                                "userId" : {id}
+                                "phone_owner" : "phone_owner",
+                                "phone_number" : "phone_number"
+                            } 
 
