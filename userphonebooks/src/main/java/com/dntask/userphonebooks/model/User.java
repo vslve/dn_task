@@ -1,7 +1,6 @@
 package com.dntask.userphonebooks.model;
 
 import com.dntask.userphonebooks.entity.UserEntity;
-
 import java.util.List;
 import java.util.stream.Collectors;
 

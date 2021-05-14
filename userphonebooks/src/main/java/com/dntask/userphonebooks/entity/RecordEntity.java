@@ -31,6 +31,13 @@ public class RecordEntity {
         this.phoneNumber = phoneNumber;
     }
 
+    public RecordEntity(Long id, String phoneOwner, String phoneNumber, UserEntity user) {
+        this.id = id;
+        this.phoneOwner = phoneOwner;
+        this.phoneNumber = phoneNumber;
+        this.user = user;
+    }
+
     public UserEntity getUser() {
         return user;
     }

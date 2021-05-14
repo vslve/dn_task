@@ -5,144 +5,170 @@ import com.dntask.userphonebooks.exception.RecordNotFoundException;
 import com.dntask.userphonebooks.model.Record;
 import com.dntask.userphonebooks.exception.UserNotFoundException;
 import com.dntask.userphonebooks.repository.RecordRepository;
-import com.dntask.userphonebooks.repository.UserRepository;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
-
+import org.springframework.boot.test.mock.mockito.MockBean;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
+import static com.dntask.userphonebooks.service.TestSource.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
 
 @SpringBootTest
 class RecordServiceTest {
-    final long correctUserId = 1;
-    final long incorrectUserId = 0;
-    final long incorrectRecordId = 0;
-
-
     @Autowired
     RecordService recordService;
-    @Autowired
-    UserRepository userRepository;
+    @MockBean
+    UserService userService;
+    @MockBean
+    RecordRepository recordRepository;
 
-    @Test
-    void addRecord() {
-        final Map<RecordEntity, Long> correctUsersRecords= Map.of(
-                new RecordEntity("abcde", "01234567891"), correctUserId,
-                new RecordEntity("abcdefghijklmno", "12345678901"), correctUserId
-        );
-        final Map<RecordEntity, Long> incorrectUsersRecords= Map.of(
-                new RecordEntity("abcde", "01234567891"), incorrectUserId
-        );
 
-        addRecord(correctUsersRecords, true);
-        addRecord(incorrectUsersRecords, false);
+    @ParameterizedTest
+    @MethodSource("generateCorrectInRecords")
+    void addRecordCorrect(Long recordId, RecordEntity record) {
+        when(userService.getEntity(correctUserId))
+                .thenReturn(correctOutUsers.get(correctUserId));
+        when(recordRepository.save(record))
+                .thenReturn(correctOutUserRecords.get(recordId));
+
+        Record addedRecord = recordService.addRecord(record, correctUserId);
+
+        assertEquals(record.getPhoneOwner(), addedRecord.getPhoneOwner());
+        assertEquals(record.getPhoneNumber(), addedRecord.getPhoneNumber());
+        assertEquals(correctUserId, addedRecord.getUserId());
+
+        Throwable exception = assertThrows(
+                UserNotFoundException.class, () -> recordService.addRecord(record, incorrectUserId)
+        );
+        assertEquals(TestSource.userNotFoundMessage, exception.getMessage());
     }
 
     @Test
-    @Transactional(propagation= Propagation.REQUIRED, readOnly=true, noRollbackFor=Exception.class)
     void getUserRecords() {
-        int correctUserRecordCount = userRepository.findById(correctUserId).get().getRecords().size();
+        when(userService.getUser(incorrectUserId)).thenThrow(TestSource.userNotFoundException);
+        when(recordRepository.findByUser_Id(correctUserId)).thenReturn(new ArrayList<>(correctOutUserRecords.values()));
+
         List<Record> userRecords = recordService.getUserRecords(correctUserId);
 
         assertNotNull(userRecords);
-        assertEquals(correctUserRecordCount, userRecords.size());
+        assertEquals(correctOutUserRecords.size(), userRecords.size());
         userRecords.forEach(record -> assertEquals(correctUserId, record.getUserId()));
 
         Throwable exception = assertThrows(
                 UserNotFoundException.class, () -> recordService.getUserRecords(incorrectUserId)
         );
-        assertEquals(TestUtils.userNotFoundMessage, exception.getMessage());
+        assertEquals(TestSource.userNotFoundMessage, exception.getMessage());
     }
 
     @Test
-    @Transactional(propagation= Propagation.REQUIRED, readOnly=true, noRollbackFor=Exception.class)
     void getUserRecord() {
-        final long correctRecordId = 1;
+        when(userService.getUser(incorrectUserId)).thenThrow(TestSource.userNotFoundException);
+        when(recordRepository.findByIdAndUser_Id(correctRecordId, correctUserId))
+                .thenReturn(correctOutUserRecords.get(correctRecordId));
+
         Record record = recordService.getUserRecord(correctRecordId, correctUserId);
 
         assertNotNull(record);
         assertEquals(correctRecordId, record.getId());
         assertEquals(correctUserId, record.getUserId());
 
-        checkIfExceptionByGetOrDeleteUserRecord(
-                correctRecordId, incorrectUserId, UserNotFoundException.class, TestUtils.userNotFoundMessage
+        checkIfExceptionByGetUserRecord(
+                correctRecordId, incorrectUserId, UserNotFoundException.class, TestSource.userNotFoundMessage
         );
-        checkIfExceptionByGetOrDeleteUserRecord(
-                incorrectRecordId, correctUserId, RecordNotFoundException.class, TestUtils.recordNotFoundMessage
+        checkIfExceptionByGetUserRecord(
+                incorrectRecordId, correctUserId, RecordNotFoundException.class, TestSource.recordNotFoundMessage
         );
     }
 
     @Test
-    @Transactional(propagation= Propagation.REQUIRED, readOnly=true, noRollbackFor=Exception.class)
     void updateUserRecord() {
-        final long correctRecordId = 1;
-        final RecordEntity updatedEntity = new RecordEntity("updated", "00000000000");
-        Record updatedRecord = recordService.updateUserRecord(correctRecordId, correctUserId, updatedEntity);
+        when(userService.getUser(incorrectUserId)).thenThrow(TestSource.userNotFoundException);
+        when(recordRepository.findById(correctRecordId))
+                .thenReturn(Optional.of(correctOutUserRecords.get(correctRecordId)));
+        when(recordRepository.save(any(RecordEntity.class))).thenReturn(updatedOutRecord);
+
+        Record updatedRecord = recordService.updateUserRecord(correctRecordId, correctUserId, updatedInRecord);
 
         assertNotNull(updatedRecord);
-        assertEquals(updatedEntity.getPhoneOwner(), updatedRecord.getPhoneOwner());
-        assertEquals(updatedEntity.getPhoneNumber(), updatedRecord.getPhoneNumber());
+        assertEquals(updatedInRecord.getPhoneOwner(), updatedRecord.getPhoneOwner());
+        assertEquals(updatedInRecord.getPhoneNumber(), updatedRecord.getPhoneNumber());
         assertEquals(correctUserId, updatedRecord.getUserId());
         assertEquals(correctRecordId, updatedRecord.getId());
 
-        checkIfExceptionByUpdateUserRecord(correctRecordId, incorrectUserId, updatedEntity, UserNotFoundException.class, TestUtils.userNotFoundMessage);
-        checkIfExceptionByUpdateUserRecord(incorrectRecordId, correctUserId, updatedEntity, RecordNotFoundException.class, TestUtils.recordNotFoundMessage);
+        checkIfExceptionByUpdateUserRecord(
+                correctRecordId, incorrectUserId, updatedInRecord, UserNotFoundException.class, TestSource.userNotFoundMessage
+        );
+        checkIfExceptionByUpdateUserRecord(
+                incorrectRecordId, correctUserId, updatedInRecord, RecordNotFoundException.class, TestSource.recordNotFoundMessage
+        );
 
     }
 
     @Test
-    @Transactional(propagation= Propagation.REQUIRED, readOnly=true, noRollbackFor=Exception.class)
     void deleteRecord() {
-        final long correctRecordId = 1;
+        when(userService.getEntity(incorrectUserId)).thenThrow(TestSource.userNotFoundException);
+        when(recordRepository.findById(correctRecordId))
+                .thenReturn(Optional.of(correctOutUserRecords.get(correctRecordId)));
+
         Record deletedRecord = recordService.deleteUserRecord(correctRecordId, correctUserId);
 
         assertNotNull(deletedRecord);
         assertEquals(correctRecordId, deletedRecord.getId());
         assertEquals(correctUserId, deletedRecord.getUserId());
-        checkIfExceptionByGetOrDeleteUserRecord(
-                correctRecordId, incorrectUserId, UserNotFoundException.class, TestUtils.userNotFoundMessage
+
+        checkIfExceptionByDeleteUserRecord(
+                correctRecordId, incorrectUserId, UserNotFoundException.class, TestSource.userNotFoundMessage
         );
-        checkIfExceptionByGetOrDeleteUserRecord(
-                incorrectRecordId, correctUserId, RecordNotFoundException.class, TestUtils.recordNotFoundMessage
+        checkIfExceptionByDeleteUserRecord(
+                incorrectRecordId, correctUserId, RecordNotFoundException.class, TestSource.recordNotFoundMessage
         );
     }
 
     @Test
     void getRecordByPhoneNumber() {
-        final long correctUserId = 1;
         final String correctPhoneNumber = "01234567891";
+        when(recordRepository.findByUser_IdAndPhoneNumber(correctUserId, correctPhoneNumber))
+                .thenReturn(new ArrayList<>(correctOutUserRecords.values()));
+
         List<Record> records = recordService.getUserRecordByPhoneNumber(correctPhoneNumber, correctUserId);
 
-        records.forEach(record -> assertEquals(correctPhoneNumber, record.getPhoneNumber()));
-        records.forEach(record -> assertEquals(correctUserId, record.getUserId()));
+        records.forEach(record ->
+                assertEquals(correctPhoneNumber, record.getPhoneNumber())
+        );
+        records.forEach(record ->
+                assertEquals(correctUserId, record.getUserId())
+        );
     }
 
-    private void addRecord(Map<RecordEntity, Long> records, boolean correct) {
-        for (Map.Entry<RecordEntity, Long> record : records.entrySet()) {
-            RecordEntity recordEntity = record.getKey();
-            long userId = record.getValue();
-            if (correct) {
-                Record addedRecord = recordService.addRecord(recordEntity,userId);
-
-                assertEquals(recordEntity.getPhoneOwner(), addedRecord.getPhoneOwner());
-                assertEquals(recordEntity.getPhoneNumber(), addedRecord.getPhoneNumber());
-                assertEquals(userId, addedRecord.getUserId());
-            } else {
-                Throwable exception = assertThrows(
-                        UserNotFoundException.class, () -> recordService.addRecord(recordEntity,userId)
-                );
-                assertEquals(TestUtils.userNotFoundMessage, exception.getMessage());
-            }
-
-        }
+    private static List<Arguments> generateCorrectInRecords() {
+        return correctInUserRecords.entrySet().stream().map(
+                entry -> Arguments.of(entry.getKey(), entry.getValue())
+        ).collect(Collectors.toList());
     }
 
-    private void checkIfExceptionByGetOrDeleteUserRecord(
+    private void checkIfExceptionByDeleteUserRecord(
+            Long recordId,
+            Long userId,
+            Class<? extends Exception> expectedException,
+            String exceptionMessage
+    ) {
+        Throwable exception = assertThrows(
+                expectedException, () -> recordService.deleteUserRecord(recordId, userId)
+        );
+        assertEquals(exceptionMessage, exception.getMessage());
+    }
+
+    private void checkIfExceptionByGetUserRecord(
             Long recordId,
             Long userId,
             Class<? extends Exception> expectedException,

@@ -1,99 +1,117 @@
 package com.dntask.userphonebooks.service;
 
 import com.dntask.userphonebooks.entity.UserEntity;
-import com.dntask.userphonebooks.model.User;
 import com.dntask.userphonebooks.exception.UserNotFoundException;
+import com.dntask.userphonebooks.model.User;
 import com.dntask.userphonebooks.repository.UserRepository;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import static com.dntask.userphonebooks.service.TestSource.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
 
 @SpringBootTest
 class UserServiceTest {
-    private final long incorrectUserId = 0;
-
     @Autowired
     private UserService userService;
-    @Autowired
+    @MockBean
     private UserRepository userRepository;
 
-    @Test
-    void addUser() {
-        final UserEntity[] correctUserEntities = {
-                new UserEntity("abcde"),
-                new UserEntity("abcdefghijklmno")
-        };
+    @ParameterizedTest
+    @MethodSource("generateCorrectInUsers")
+    void addUser(Long userId, UserEntity user) {
+        when(userRepository.save(user)).thenReturn(correctOutUsers.get(userId));
 
-        for (UserEntity user : correctUserEntities) {
-            User addedUser = userService.addUser(user);
+        User addedUser = userService.addUser(user);
 
-            assertEquals(user.getName(), addedUser.getName());
-        }
+        assertEquals(user.getName(), addedUser.getName());
     }
 
     @Test
-    @Transactional(propagation= Propagation.REQUIRED, readOnly=true, noRollbackFor=Exception.class)
     void getUsers() {
-        final long correctUsersCount = userRepository.findAll().spliterator().estimateSize();
+        when(userRepository.findAll()).thenReturn(correctOutUsers.values());
+
         List<User> users = userService.getUsers();
 
         assertNotNull(users);
-        assertEquals(correctUsersCount, users.size());
+        assertEquals(correctOutUsers.values().size(), users.size());
     }
 
     @Test
-    @Transactional(propagation= Propagation.REQUIRED, readOnly=true, noRollbackFor=Exception.class)
     void updateUser() {
-        final long correctUserId = 1;
-        UserEntity updatedEntity = new UserEntity("updated");
-        User updatedUser = userService.updateUser(correctUserId, updatedEntity);
+        when(userRepository.findById(correctUserId))
+                .thenReturn(Optional.of(correctOutUsers.get(correctUserId)));
+        when(userRepository.save(any(UserEntity.class))).thenReturn(updatedOutUser);
+
+        User updatedUser = userService.updateUser(correctUserId, updatedInUser);
 
         assertNotNull(updatedUser);
         assertEquals(correctUserId, updatedUser.getId());
-        assertEquals(updatedEntity.getName(), updatedUser.getName());
-        checkUserNoFoundExceptionByGetById(incorrectUserId);
+        assertEquals(updatedInUser.getName(), updatedUser.getName());
+        checkIfUserNoFoundExceptionByGetById(incorrectUserId);
     }
 
     @Test
-    @Transactional(propagation= Propagation.REQUIRED, readOnly=true, noRollbackFor=Exception.class)
     void getUser() {
-        final long correctUserId = 1;
+        when(userRepository.findById(correctUserId))
+                .thenReturn(Optional.of(correctOutUsers.get(correctUserId)));
+
         User user = userService.getUser(correctUserId);
 
         assertNotNull(user);
         assertEquals(correctUserId, user.getId());
-        checkUserNoFoundExceptionByGetById(incorrectUserId);
+        checkIfUserNoFoundExceptionByGetById(incorrectUserId);
     }
 
     @Test
-    @Transactional(propagation= Propagation.REQUIRED, readOnly=true, noRollbackFor=Exception.class)
     void deleteUser() {
-        final long correctUserId = 1;
+        when(userRepository.findById(correctUserId))
+                .thenReturn(Optional.of(correctOutUsers.get(correctUserId)));
+
         User deletedUser = userService.deleteUser(correctUserId);
 
         assertNotNull(deletedUser);
         assertEquals(correctUserId, deletedUser.getId());
-        checkUserNoFoundExceptionByGetById(incorrectUserId);
+        checkIfUserNoFoundExceptionByGetById(incorrectUserId);
     }
 
-    @Test
-    @Transactional(propagation= Propagation.REQUIRED, readOnly=true, noRollbackFor=Exception.class)
-    void getUserByName() {
-        final String[] correctNames = {"abc", "ghijklm", "abcdefghijklmno"};
+    @ParameterizedTest
+    @MethodSource("generateCorrectNames")
+    void getUserByName(String nameSubstring) {
+        when(userRepository.findByNameContainingIgnoreCase(nameSubstring)).thenReturn(
+                correctOutUsers.values().stream()
+                        .filter(user -> user.getName().contains(nameSubstring)).collect(Collectors.toList())
+        );
 
-        for (String nameSubstring : correctNames) {
-            List<User> users = userService.getUserByName(nameSubstring);
+        List<User> users = userService.getUserByName(nameSubstring);
 
-            users.forEach(user -> assertTrue(user.getName().contains(nameSubstring)));
-        }
+        users.forEach(user -> assertTrue(user.getName().contains(nameSubstring)));
     }
 
-    private void checkUserNoFoundExceptionByGetById(Long userId) {
+    private static List<Arguments> generateCorrectInUsers() {
+        return correctInUsers.entrySet().stream().map(
+                entry -> Arguments.of(entry.getKey(), entry.getValue())
+        ).collect(Collectors.toList());
+    }
+
+    private static List<Arguments> generateCorrectNames() {
+        return correctUserNames.stream().map(Arguments::of).collect(Collectors.toList());
+    }
+
+    private void checkIfUserNoFoundExceptionByGetById(Long userId) {
         Throwable exception = assertThrows(UserNotFoundException.class, () -> userService.getUser(userId));
-        assertEquals(TestUtils.userNotFoundMessage, exception.getMessage());
+        assertEquals(TestSource.userNotFoundMessage, exception.getMessage());
     }
+
+
 }

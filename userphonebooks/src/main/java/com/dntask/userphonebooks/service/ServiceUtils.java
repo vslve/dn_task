@@ -3,7 +3,6 @@ package com.dntask.userphonebooks.service;
 import com.dntask.userphonebooks.entity.UserEntity;
 import com.dntask.userphonebooks.exception.RecordNotFoundException;
 import com.dntask.userphonebooks.exception.UserNotFoundException;
-
 import java.util.Optional;
 
 
@@ -21,4 +20,5 @@ class ServiceUtils {
     public static boolean checkIfUserExist(Optional<UserEntity> user) {
         return !isEntityNull(user.orElse(null), userNotFoundException);
     }
+
 }

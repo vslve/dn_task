@@ -25,6 +25,15 @@ public class UserEntity {
         this.name = name;
     }
 
+    public UserEntity(Long id) {
+        this.id = id;
+    }
+
+    public UserEntity(Long id, String name, List<RecordEntity> records) {
+        this.id = id;
+        this.name = name;
+        this.records = records;
+    }
 
     public List<RecordEntity> getRecords() {
         return records;
