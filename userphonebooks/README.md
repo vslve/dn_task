@@ -38,7 +38,7 @@ response body format:
                                     [
                                         {   
                                             "id" : id
-                                            "name" : "name"
+                                            "name" : "{name}"
                                             "records : [
                                                 {
                                                     "id" : id,
@@ -58,7 +58,7 @@ response body format:
                 
                             {   
                                 "id" : {id}
-                                "name" : "{name}"
+                                "name" : "name"
                                 "records : [
                                     {
                                         "id" : id,
@@ -85,7 +85,7 @@ response body format:
                 
                             {   
                                 "id" : {id}
-                                "name" : "{name}"
+                                "name" : "name"
                                 "records : [
                                     {
                                         "id" : id,
@@ -101,7 +101,7 @@ Records:
 
 GET /users/{id}/records - to get all records for user with id {id}
 
-GET /users/{id}/records?phone={phone} - to get records whith phone_number full matched {phone} for user whith id {id},
+GET /users/{id}/records?phone={phone} - to get records whith phone_number full matched {phone} for user whith id {id}, 
                                         {phone} - sequence of digits, length = 11
 
 
@@ -109,7 +109,7 @@ response body format:
             
                         [
                             {
-                                "id" : {recordId},
+                                "id" : recordId,
                                 "userId" : {id}
                                 "phone_owner" : "phone_owner",
                                 "phone_number" : "phone_number"
@@ -148,7 +148,7 @@ request body format:
 response body format: 
            
                             {
-                                "id" : {recordId},
+                                "id" : recordId,
                                 "userId" : {id}
                                 "phone_owner" : "phone_owner",
                                 "phone_number" : "phone_number"
