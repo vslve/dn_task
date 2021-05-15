@@ -138,8 +138,8 @@ POST /users/{id}/records - to add new record for user with id {id}
 request body format: 
                     
                         {
-                            "phone_owner" : "phone_owner",
-                            "phone_number" : "phone_number"
+                            "phoneOwner" : "phone_owner",
+                            "phoneNumber" : "phone_number"
                         }, 
 
                         5 <= phone_owner length <= 15
