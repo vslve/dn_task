@@ -43,8 +43,8 @@ response body format:
                                                 {
                                                     "id" : id,
                                                     "userId" : userId
-                                                    "phone_owner" : "phone_owner",
-                                                    "phone_number" : "phone_number"
+                                                    "phoneOwner"" : "phoneOwner",
+                                                    "phoneNumber"" : "phoneNumber"
                                                 }
                                             ]
                                         }
@@ -63,8 +63,8 @@ response body format:
                                     {
                                         "id" : id,
                                         "userId" : userId
-                                        "phone_owner" : "phone_owner",
-                                        "phone_number" : "phone_number"
+                                        "phoneOwner"" : "phoneOwner",
+                                        "phoneNumber"" : "phoneNumber"
                                     }
                                 ]
                             }
@@ -90,8 +90,8 @@ response body format:
                                     {
                                         "id" : id,
                                         "userId" : userId
-                                        "phone_owner" : "phone_owner",
-                                        "phone_number" : "phone_number"
+                                        "phoneOwner"" : "phoneOwner",
+                                        "phoneNumber"" : "phoneNumber"
                                     }
                                 ]
                             }
@@ -111,8 +111,8 @@ response body format:
                             {
                                 "id" : recordId,
                                 "userId" : {id}
-                                "phone_owner" : "phone_owner",
-                                "phone_number" : "phone_number"
+                                "phoneOwner"" : "phoneOwner",
+                                "phoneNumber"" : "phoneNumber"
                             }
 
                         ]
@@ -126,8 +126,8 @@ response body format:
                             {
                                 "id" : {recordId},
                                 "userId" : {id}
-                                "phone_owner" : "phone_owner",
-                                "phone_number" : "phone_number"
+                                "phoneOwner"" : "phoneOwner",
+                                "phoneNumber"" : "phoneNumber"
                             }
 
 
@@ -138,8 +138,8 @@ POST /users/{id}/records - to add new record for user with id {id}
 request body format: 
                     
                         {
-                            "phoneOwner" : "phone_owner",
-                            "phoneNumber" : "phone_number"
+                            "phoneOwner" : "phoneOwner",
+                            "phoneNumber" : "phoneNumber"
                         }, 
 
                         5 <= phone_owner length <= 15
@@ -150,7 +150,7 @@ response body format:
                             {
                                 "id" : recordId,
                                 "userId" : {id}
-                                "phone_owner" : "phone_owner",
-                                "phone_number" : "phone_number"
+                                "phoneOwner"" : "phoneOwner",
+                                "phoneNumber"" : "phoneNumber"
                             } 
 
